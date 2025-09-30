@@ -1,6 +1,6 @@
-# AI Learning Journey - 6 Month Program
+# AI Learning Journey - 6 Month Research-Focused Program
 
-A comprehensive 6-month learning program covering AI fundamentals to advanced topics including machine learning, transformers, LLMs, and world models.
+A comprehensive 6-month research-focused learning program covering mathematical foundations, neural networks, transformers, generative models, reinforcement learning, and cutting-edge AI research topics.
 
 ## 🚀 Getting Started
 
