@@ -84,6 +84,8 @@ where η is the learning rate.
 
 
 import numpy as np
+import sys
+sys.path.append('src')
 from sklearn.datasets import fetch_openml
 from sklearn.model_selection import train_test_split
 import matplotlib.pyplot as plt
@@ -91,6 +93,10 @@ import argparse
 import time
 import os
 import glob
+from nn_core.models.mlp import MLP as CoreMLP
+from nn_core.optim.optim import Optim
+from nn_core.schedulers.lr import LRScheduler
+from nn_core.training.loop import train_supervised, one_hot, cross_entropy, accuracy
 
 # ---------- helpers ----------
 def one_hot(y, num_classes):
@@ -115,11 +121,23 @@ def accuracy(p, y_true):
 
 # ---------- model ----------
 class MLP:
-    def __init__(self, d=784, h=128, c=10, weight_scale=0.01, seed=42):
+    def __init__(self, d=784, h=128, c=10, init='he', seed=42):
         rng = np.random.default_rng(seed)
-        self.W1 = rng.normal(0, weight_scale, size=(d, h)).astype(np.float32)
+
+        def init_w(shape, kind):
+            fan_in, fan_out = shape[0], shape[1]
+            if kind == 'he':
+                std = np.sqrt(2.0 / fan_in)
+                return rng.normal(0, std, size=shape).astype(np.float32)
+            elif kind == 'xavier':
+                std = np.sqrt(2.0 / (fan_in + fan_out))
+                return rng.normal(0, std, size=shape).astype(np.float32)
+            else:  # 'normal'
+                return rng.normal(0, 0.01, size=shape).astype(np.float32)
+
+        self.W1 = init_w((d, h), init)
         self.b1 = np.zeros((h,), dtype=np.float32)
-        self.W2 = rng.normal(0, weight_scale, size=(h, c)).astype(np.float32)
+        self.W2 = init_w((h, c), init)
         self.b2 = np.zeros((c,), dtype=np.float32)
         self.cache = {}
 
@@ -168,70 +186,50 @@ def load_mnist():
     return X_train, X_test, y_train, y_test
 
 # ---------- train loop ----------
-def train(num_epochs=10, batch_size=128, lr=0.1, weight_decay=1e-4, seed=42, save_plots=True):
+def train(num_epochs=10, batch_size=128, lr=0.1, weight_decay=1e-4, seed=42, save_plots=True,
+          opt='sgd', beta1=0.9, beta2=0.999, eps=1e-8, init='he', clip_grad=0.0,
+          lr_sched='none', lr_step=5, lr_gamma=0.5, warmup_epochs=0):
     print("Loading MNIST dataset...")
     X_train, X_test, y_train, y_test = load_mnist()
     print(f"Training set: {X_train.shape[0]} samples")
     print(f"Test set: {X_test.shape[0]} samples")
     
-    model = MLP(seed=seed)
+    model = CoreMLP(init=init, seed=seed)
     print(f"Model initialized with {sum(p.size for p in [model.W1, model.b1, model.W2, model.b2])} parameters")
-
-    rng = np.random.default_rng(seed)
-    N = X_train.shape[0]
-    steps = (N + batch_size - 1) // batch_size
-
-    # Training history
-    train_losses = []
-    test_losses = []
-    test_accuracies = []
 
     print(f"\nStarting training for {num_epochs} epochs...")
     print("=" * 60)
-    
     start_time = time.time()
 
-    for epoch in range(1, num_epochs + 1):
-        epoch_start = time.time()
-        idx = rng.permutation(N)
-        Xs, ys = X_train[idx], y_train[idx]
+    # Use nn_core training loop
+    params = {'W1': model.W1, 'b1': model.b1, 'W2': model.W2, 'b2': model.b2}
+    optim = Optim(params, opt=opt, lr=lr, beta1=beta1, beta2=beta2, eps=eps,
+                  weight_decay=weight_decay, nesterov=(opt=='nesterov'))
+    sched = LRScheduler(lr, kind=lr_sched, step=lr_step, gamma=lr_gamma,
+                        total_epochs=num_epochs, warmup=warmup_epochs)
 
-        total_loss = 0.0
-        for s in range(steps):
-            a, b = s * batch_size, min(N, (s + 1) * batch_size)
-            xb, yb = Xs[a:b], ys[a:b]
-            yb_oh = one_hot(yb, 10)
+    def on_epoch_end(epoch_i, lr_epoch, tr_loss, v_loss, v_acc):
+        print(f"Epoch {epoch_i:02d} | lr={lr_epoch:.5f} | train_loss={tr_loss:.4f} | test_loss={v_loss:.4f} | test_acc={v_acc:.4f} | time=0.00s")
 
-            pb = model.forward(xb)
-            loss = cross_entropy(pb, yb_oh)
-            total_loss += loss * (b - a)
-
-            grads = model.backward(yb_oh)
-            model.step(grads, lr=lr, weight_decay=weight_decay)
-
-        # Evaluation
-        p_test = model.forward(X_test)
-        test_acc = accuracy(p_test, y_test)
-        test_loss = cross_entropy(p_test, one_hot(y_test, 10))
-        
-        train_loss = total_loss / N
-        train_losses.append(train_loss)
-        test_losses.append(test_loss)
-        test_accuracies.append(test_acc)
-
-        epoch_time = time.time() - epoch_start
-        print(f"Epoch {epoch:02d} | train_loss={train_loss:.4f} | "
-              f"test_loss={test_loss:.4f} | test_acc={test_acc:.4f} | "
-              f"time={epoch_time:.2f}s")
+    train_losses, test_losses, test_accuracies = train_supervised(
+        model,
+        X_train, y_train,
+        X_test, y_test,
+        num_epochs=num_epochs, batch_size=batch_size,
+        num_classes=10,
+        optim=optim,
+        scheduler=sched,
+        seed=seed,
+        clip_grad=clip_grad,
+        on_epoch_end=on_epoch_end
+    )
 
     total_time = time.time() - start_time
     print("=" * 60)
     print(f"Training completed in {total_time:.2f} seconds")
     print(f"Final test accuracy: {test_accuracies[-1]:.4f}")
-    
     if save_plots:
         plot_training_history(train_losses, test_losses, test_accuracies)
-    
     return model, train_losses, test_losses, test_accuracies
 
 def plot_training_history(train_losses, test_losses, test_accuracies):
@@ -355,6 +353,24 @@ def main():
     parser.add_argument('--predict-image', type=str, help='Predict digit from image file (.npy)')
     parser.add_argument('--list-samples', action='store_true', help='List available sample images')
     parser.add_argument('--test-all-samples', action='store_true', help='Test all available samples')
+    # Optimizer / init / sched flags
+    parser.add_argument('--opt', type=str, default='sgd',
+                        choices=['sgd','momentum','nesterov','adam','adamw'],
+                        help='Optimizer')
+    parser.add_argument('--beta1', type=float, default=0.9, help='Momentum/Adam beta1')
+    parser.add_argument('--beta2', type=float, default=0.999, help='Adam beta2')
+    parser.add_argument('--eps', type=float, default=1e-8, help='Adam eps')
+    parser.add_argument('--init', type=str, default='he',
+                        choices=['he','xavier','normal'],
+                        help='Weight init for W1/W2')
+    parser.add_argument('--clip-grad', type=float, default=0.0,
+                        help='Global grad-norm clip (0=off)')
+    parser.add_argument('--lr-sched', type=str, default='none',
+                        choices=['none','step','cosine'],
+                        help='LR scheduler')
+    parser.add_argument('--lr-step', type=int, default=5, help='StepLR step size (epochs)')
+    parser.add_argument('--lr-gamma', type=float, default=0.5, help='StepLR decay factor')
+    parser.add_argument('--warmup-epochs', type=int, default=0, help='Cosine warmup epochs')
     
     args = parser.parse_args()
     
@@ -434,7 +450,10 @@ def main():
     else:
         # Training mode
         train(num_epochs=args.epochs, batch_size=args.batch_size, lr=args.lr,
-              weight_decay=args.weight_decay, seed=args.seed, save_plots=not args.no_plots)
+              weight_decay=args.weight_decay, seed=args.seed, save_plots=not args.no_plots,
+              opt=args.opt, beta1=args.beta1, beta2=args.beta2, eps=args.eps,
+              init=args.init, clip_grad=args.clip_grad, lr_sched=args.lr_sched,
+              lr_step=args.lr_step, lr_gamma=args.lr_gamma, warmup_epochs=args.warmup_epochs)
 
 if __name__ == "__main__":
     main()

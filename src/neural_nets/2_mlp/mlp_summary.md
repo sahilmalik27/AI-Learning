@@ -1,6 +1,11 @@
 # 2-Layer MLP: Concepts & Backpropagation
 
-This document summarizes the formulas and intuitions we discussed for a simple **2-layer Multi-Layer Perceptron (MLP)** applied to MNIST.
+This document summarizes the formulas and intuitions we discussed for a simple **2-layer Multi-Layer Perceptron (MLP)** applied to MNIST. The current codebase decouples the MLP and training logic into a reusable core (`src/nn_core`) with:
+
+- Model: `MLP` (He/Xavier/Normal init)
+- Optimizers: SGD, Momentum, Nesterov, Adam, AdamW
+- Schedulers: None, Step, Cosine (with warmup)
+- Training: Mini-batch loop with gradient clipping and callbacks
 
 ---
 
@@ -66,12 +71,12 @@ For one-hot labels \(Y \in \mathbb{R}^{N \times C}\):
 
 ---
 
-## 5. SGD Update
+## 5. Parameter Update (Optimizers)
 
 For each parameter \( \theta \in \{W_1, b_1, W_2, b_2\} \):  
 \[ \theta \leftarrow \theta - \eta \, \nabla_\theta \]
 
-Where \( \eta \) is the learning rate.
+Where \( \eta \) is the learning rate. In practice, we often use advanced optimizers (e.g., Momentum, Adam/AdamW) and learning-rate schedules (Step/Cosine with warmup) for faster and more stable convergence. L2 regularization (weight decay) and gradient clipping are also used to improve generalization and stability.
 
 ---
 

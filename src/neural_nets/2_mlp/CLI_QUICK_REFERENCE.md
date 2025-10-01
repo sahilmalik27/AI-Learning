@@ -1,6 +1,6 @@
 # 2-Layer MLP CLI Quick Reference
 
-## 🚀 Essential Commands
+## 🚀 Essential Commands (now powered by nn_core)
 
 ### Training
 ```bash
@@ -8,7 +8,11 @@
 python src/neural_nets/2_mlp/mlp_mnist_numpy.py
 
 # Custom training
-python src/neural_nets/2_mlp/mlp_mnist_numpy.py --epochs 20 --lr 0.05 --batch-size 64
+python src/neural_nets/2_mlp/mlp_mnist_numpy.py \
+  --epochs 20 --batch-size 64 --lr 0.05 \
+  --opt adamw --weight-decay 1e-2 \
+  --lr-sched cosine --warmup-epochs 1 \
+  --init he --clip-grad 1.0
 ```
 
 ### Sample Management
@@ -36,9 +40,19 @@ python src/neural_nets/2_mlp/mlp_mnist_numpy.py --predict-image data/raw/mnist_s
 | `--epochs N` | Number of training epochs |
 | `--batch-size N` | Batch size |
 | `--lr FLOAT` | Learning rate |
-| `--weight-decay FLOAT` | Weight decay |
+| `--weight-decay FLOAT` | L2 weight decay |
 | `--seed N` | Random seed |
 | `--no-plots` | Disable plots |
+| `--opt {sgd,momentum,nesterov,adam,adamw}` | Optimizer |
+| `--beta1 FLOAT` | Momentum/Adam beta1 |
+| `--beta2 FLOAT` | Adam beta2 |
+| `--eps FLOAT` | Adam epsilon |
+| `--init {he,xavier,normal}` | Weight initialization |
+| `--clip-grad FLOAT` | Global grad-norm clipping (0=off) |
+| `--lr-sched {none,step,cosine}` | LR scheduler |
+| `--lr-step INT` | StepLR step size (epochs) |
+| `--lr-gamma FLOAT` | StepLR decay factor |
+| `--warmup-epochs INT` | Cosine warmup epochs |
 | `--predict-image FILE` | Predict from image file |
 | `--list-samples` | List available samples |
 | `--test-all-samples` | Test all samples |
@@ -99,6 +113,7 @@ Test Results: 10/10 correct (100.0%)
 | "Image file not found" | Check file path with `--list-samples` |
 | Slow training | Use `--no-plots` flag |
 | Memory issues | Reduce `--batch-size` |
+| Import error for nn_core | Run from repo root or add `sys.path.append('src')` |
 
 ## 📁 File Locations
 

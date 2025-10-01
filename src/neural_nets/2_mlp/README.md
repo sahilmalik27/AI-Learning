@@ -2,13 +2,13 @@
 
 ## 🧠 Overview
 
-This directory contains a complete implementation of a 2-layer Multi-Layer Perceptron (MLP) in pure NumPy, trained on MNIST digit classification. This is part of Week 2 of the AI Learning Journey.
+This directory contains a complete implementation of a 2-layer Multi-Layer Perceptron (MLP) in pure NumPy, trained on MNIST digit classification. It is now powered by a reusable core (`src/nn_core`) for models, optimizers, schedulers, and training loops. This is part of Week 2 of the AI Learning Journey.
 
 ## 📁 Files
 
 | File | Description |
 |------|-------------|
-| `mlp_mnist_numpy.py` | Main MLP implementation with CLI |
+| `mlp_mnist_numpy.py` | Main MLP implementation with CLI (uses `nn_core`) |
 | `download_mnist_samples.py` | Sample image downloader |
 | `mlp_summary.md` | Mathematical documentation |
 | `CLI_DOCUMENTATION.md` | Complete CLI reference |
@@ -22,9 +22,11 @@ This directory contains a complete implementation of a 2-layer Multi-Layer Perce
 python src/neural_nets/2_mlp/download_mnist_samples.py
 ```
 
-### 2. Train the Model
+### 2. Train the Model (nn_core-powered)
 ```bash
-python src/neural_nets/2_mlp/mlp_mnist_numpy.py --epochs 10
+python src/neural_nets/2_mlp/mlp_mnist_numpy.py --epochs 10 \
+  --opt adamw --lr 3e-3 --weight-decay 1e-2 \
+  --lr-sched cosine --warmup-epochs 1 --init he --clip-grad 1.0
 ```
 
 ### 3. Test with Images
@@ -46,7 +48,7 @@ This implementation demonstrates:
 ### **Programming Skills**
 - ✅ Pure NumPy implementation
 - ✅ Object-oriented design
-- ✅ CLI development
+- ✅ CLI development (backed by `nn_core`)
 - ✅ Data visualization
 - ✅ Model evaluation
 
@@ -82,8 +84,8 @@ Input (784) → Hidden (128, ReLU) → Output (10, Softmax)
 - `README.md` - This overview
 
 ### **For Usage**
-- `CLI_DOCUMENTATION.md` - Complete CLI reference
-- `CLI_QUICK_REFERENCE.md` - Quick command reference
+- `CLI_DOCUMENTATION.md` - Complete CLI reference (updated for `nn_core`)
+- `CLI_QUICK_REFERENCE.md` - Quick command reference (updated)
 
 ## 🎓 Week 2 Progress
 
@@ -123,6 +125,7 @@ After mastering this NumPy implementation:
 - Add regularization techniques (Dropout, BatchNorm)
 - Create interactive visualizations
 - Add model saving/loading
+- Add other models to `nn_core/models` (e.g., CNN)
 
 ### **Testing Different Architectures**
 - 3-layer MLP
