@@ -4,6 +4,7 @@ Shared CLI utilities for building consistent command-line interfaces across use-
 
 import argparse
 from dataclasses import dataclass
+from nn_core.utils.io import default_model_path, default_artifact_path
 
 
 def add_common_training_args(parser: argparse.ArgumentParser) -> argparse.ArgumentParser:
@@ -46,3 +47,47 @@ def build_optim_and_scheduler(model_params, args, OptimCls, SchedulerCls):
     sched = SchedulerCls(args.lr, kind=args.lr_sched, step=args.lr_step, gamma=args.lr_gamma,
                          total_epochs=args.epochs, warmup=args.warmup_epochs)
     return optim, sched
+
+
+# ---------- prediction arg helpers ----------
+def add_image_prediction_args(parser: argparse.ArgumentParser, model_name: str, include_list_samples: bool = False, include_download: bool = False) -> argparse.ArgumentParser:
+    """
+    Add common image prediction arguments:
+    - --model-path (with sensible default under models/)
+    - --predict-image (expects .npy flattened image)
+    - optional --list-samples flag for datasets with bundled samples
+    """
+    parser.add_argument('--model-path', type=str, default=default_model_path(model_name), help='Path to save/load model')
+    parser.add_argument('--predict-image', type=str, help='Predict class from .npy flattened image file')
+    if include_list_samples:
+        parser.add_argument('--list-samples', action='store_true', help='List available local .npy samples')
+    if include_download:
+        parser.add_argument('--download-samples', action='store_true', help='Download a few example samples locally')
+    return parser
+
+
+def add_text_prediction_args(parser: argparse.ArgumentParser, model_name: str, vectorizer_name: str) -> argparse.ArgumentParser:
+    """
+    Add common text prediction arguments:
+    - --model-path (models/<model_name>.pkl)
+    - --vectorizer-path (artifacts/<vectorizer_name>.pkl)
+    - --predict-text "raw text"
+    """
+    parser.add_argument('--model-path', type=str, default=default_model_path(model_name))
+    parser.add_argument('--vectorizer-path', type=str, default=default_artifact_path(vectorizer_name))
+    parser.add_argument('--predict-text', type=str, help='Predict class for a raw text string')
+    return parser
+
+
+def add_regression_prediction_args(parser: argparse.ArgumentParser, model_name: str, scaler_name: str | None = None) -> argparse.ArgumentParser:
+    """
+    Add common regression prediction arguments:
+    - --model-path (models/<model_name>.pkl)
+    - optional --scaler-path (artifacts/<scaler_name>.pkl)
+    - --predict-row 'comma,separated,values' or --predict-file path.csv (future)
+    """
+    parser.add_argument('--model-path', type=str, default=default_model_path(model_name))
+    if scaler_name:
+        parser.add_argument('--scaler-path', type=str, default=default_artifact_path(scaler_name))
+    parser.add_argument('--predict-row', type=str, help='Comma-separated feature values for single-row prediction')
+    return parser

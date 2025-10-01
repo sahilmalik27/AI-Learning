@@ -18,7 +18,8 @@ from nn_core.models.mlp import MLP
 from nn_core.optim.optim import Optim
 from nn_core.schedulers.lr import LRScheduler
 from nn_core.training.loop import train_supervised
-from nn_core.utils.cli import add_common_training_args, build_optim_and_scheduler
+from nn_core.utils.cli import add_common_training_args, build_optim_and_scheduler, add_text_prediction_args
+from nn_core.utils.io import save_pickle, load_pickle, ensure_dir
 
 
 def load_20newsgroups(max_features=20000):
@@ -35,10 +36,30 @@ def main():
     parser = add_common_training_args(parser)
     parser.set_defaults(lr=3e-3, opt='adamw', clip_grad=1.0, lr_sched='cosine', warmup_epochs=1, weight_decay=1e-2, init='xavier')
     parser.add_argument('--max-features', type=int, default=20000)
+    parser = add_text_prediction_args(parser, model_name='newsgroups_mlp', vectorizer_name='newsgroups_tfidf')
 
     args = parser.parse_args()
 
     X_train, X_test, y_train, y_test = load_20newsgroups(max_features=args.max_features)
+
+    if args.predict_text is not None:
+        import os
+        if not os.path.exists(args.model_path) or not os.path.exists(args.vectorizer_path):
+            print("Model or vectorizer not found. Please train first.")
+            return
+        model = load_pickle(args.model_path)
+        vectorizer = load_pickle(args.vectorizer_path)
+        X = vectorizer.transform([args.predict_text]).astype('float32')
+        X = X.toarray().astype(np.float32)
+        p = model.forward(X)
+        pred = int(np.argmax(p[0]))
+        conf = float(p[0][pred])
+        # Load target names for display
+        from sklearn.datasets import fetch_20newsgroups
+        tn = fetch_20newsgroups(subset='all', remove=('headers','footers','quotes')).target_names
+        name = tn[pred] if 0 <= pred < len(tn) else str(pred)
+        print(f"Predicted class: {pred} ({name}) | Confidence: {conf:.4f}")
+        return
 
     d = X_train.shape[1]
     c = len(np.unique(y_train))
@@ -62,6 +83,17 @@ def main():
     )
 
     print(f"Final val accuracy: {val_accs[-1]:.4f}")
+    ensure_dir('models'); ensure_dir('artifacts')
+    save_pickle(model, args.model_path)
+    # save vectorizer used in loader
+    from sklearn.feature_extraction.text import TfidfVectorizer
+    # Recreate the vectorizer to persist vocabulary (simple approach)
+    from sklearn.datasets import fetch_20newsgroups
+    data = fetch_20newsgroups(subset='all', remove=('headers','footers','quotes'))
+    vec = TfidfVectorizer(max_features=args.max_features, ngram_range=(1,2))
+    vec.fit(data.data)
+    save_pickle(vec, args.vectorizer_path)
+    print(f"Saved model to {args.model_path} and vectorizer to {args.vectorizer_path}")
 
 
 if __name__ == '__main__':

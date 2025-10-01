@@ -17,7 +17,8 @@ from nn_core.models.mlp import MLP
 from nn_core.optim.optim import Optim
 from nn_core.schedulers.lr import LRScheduler
 from nn_core.training.loop import train_supervised
-from nn_core.utils.cli import add_common_training_args, build_optim_and_scheduler
+from nn_core.utils.cli import add_common_training_args, build_optim_and_scheduler, add_image_prediction_args
+from nn_core.utils.io import save_pickle, load_pickle, ensure_dir
 
 
 def load_fashion_mnist():
@@ -32,9 +33,32 @@ def main():
     parser = add_common_training_args(parser)
     parser.set_defaults(lr=0.05, opt='adamw', clip_grad=1.0, lr_sched='cosine', warmup_epochs=1)
 
+    parser = add_image_prediction_args(parser, model_name='fashion_mnist_mlp')
     args = parser.parse_args()
 
     X_train, X_test, y_train, y_test = load_fashion_mnist()
+
+    # Prediction-only / download samples
+    if getattr(args, 'download_samples', False):
+        from nn_core.utils.datasets import download_fashion_mnist_samples
+        n = download_fashion_mnist_samples(10, 'data/raw/fashion_mnist_samples')
+        print(f"Downloaded {n} Fashion-MNIST samples to data/raw/fashion_mnist_samples")
+        return
+    # Prediction-only
+    if args.predict_image:
+        import os, numpy as np
+        if not os.path.exists(args.model_path):
+            print(f"Model not found at {args.model_path}. Train first.")
+            return
+        model = load_pickle(args.model_path)
+        x = np.load(args.predict_image).astype(np.float32)
+        p = model.forward(x.reshape(1, -1))
+        pred = int(np.argmax(p[0]))
+        from nn_core.utils.datasets import fashion_mnist_label_names
+        label = fashion_mnist_label_names()[pred]
+        conf = float(p[0][pred])
+        print(f"Predicted: {pred} ({label}) | Confidence: {conf:.4f}")
+        return
 
     model = MLP(d=784, h=256, c=10, init=args.init, seed=args.seed)
     params = model.parameters()
@@ -56,6 +80,9 @@ def main():
     )
 
     print(f"Final test accuracy: {test_accs[-1]:.4f}")
+    ensure_dir('models')
+    save_pickle(model, args.model_path)
+    print(f"Saved model to {args.model_path}")
 
 
 if __name__ == '__main__':

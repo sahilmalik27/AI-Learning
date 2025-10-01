@@ -17,6 +17,8 @@ from sklearn.preprocessing import StandardScaler
 from nn_core.models.mlp import MLP
 from nn_core.optim.optim import Optim
 from nn_core.schedulers.lr import LRScheduler
+from nn_core.utils.cli import add_common_training_args, build_optim_and_scheduler, add_regression_prediction_args
+from nn_core.utils.io import save_pickle, load_pickle, ensure_dir
 
 
 def mse_loss(pred: np.ndarray, target: np.ndarray) -> float:
@@ -25,41 +27,39 @@ def mse_loss(pred: np.ndarray, target: np.ndarray) -> float:
 
 def main():
     parser = argparse.ArgumentParser(description='California Housing Regression (nn_core)')
-    parser.add_argument('--epochs', type=int, default=20)
-    parser.add_argument('--batch-size', type=int, default=128)
-    parser.add_argument('--lr', type=float, default=1e-2)
-    parser.add_argument('--weight-decay', type=float, default=1e-3)
-    parser.add_argument('--seed', type=int, default=42)
-    parser.add_argument('--opt', type=str, default='adamw', choices=['sgd','momentum','nesterov','adam','adamw'])
-    parser.add_argument('--beta1', type=float, default=0.9)
-    parser.add_argument('--beta2', type=float, default=0.999)
-    parser.add_argument('--eps', type=float, default=1e-8)
-    parser.add_argument('--init', type=str, default='xavier', choices=['he','xavier','normal'])
-    parser.add_argument('--clip-grad', type=float, default=1.0)
-    parser.add_argument('--lr-sched', type=str, default='cosine', choices=['none','step','cosine'])
-    parser.add_argument('--lr-step', type=int, default=5)
-    parser.add_argument('--lr-gamma', type=float, default=0.5)
-    parser.add_argument('--warmup-epochs', type=int, default=2)
+    parser = add_common_training_args(parser)
+    parser.set_defaults(lr=1e-2, weight_decay=1e-3, opt='adamw', clip_grad=1.0, lr_sched='cosine', warmup_epochs=2, init='xavier')
+    parser = add_regression_prediction_args(parser, model_name='california_housing_mlp', scaler_name='california_housing_scaler')
 
     args = parser.parse_args()
 
     cal = fetch_california_housing()
-    X = cal.data.astype(np.float32)
-    y = cal.target.astype(np.float32)
-
+    X_all = cal.data.astype(np.float32)
+    y_all = cal.target.astype(np.float32)
     scaler = StandardScaler()
-    X = scaler.fit_transform(X).astype(np.float32)
+    X = scaler.fit_transform(X_all).astype(np.float32)
+    X_train, X_test, y_train, y_test = train_test_split(X, y_all, test_size=0.2, random_state=args.seed)
 
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=args.seed)
+    # Prediction-only
+    if args.predict_row:
+        import os
+        if not os.path.exists(args.model_path) or not os.path.exists(args.scaler_path):
+            print('Model or scaler not found. Train first.')
+            return
+        model = load_pickle(args.model_path)
+        saved_scaler = load_pickle(args.scaler_path)
+        # parse comma-separated floats
+        values = np.array([float(x) for x in args.predict_row.split(',')], dtype=np.float32)
+        x_scaled = saved_scaler.transform(values.reshape(1, -1)).astype(np.float32)
+        pred = model.forward(x_scaled).squeeze(-1)
+        print(f'Predicted value: {float(pred[0]):.4f}')
+        return
 
     # Regression MLP: output dimension = 1
     model = MLP(d=X_train.shape[1], h=128, c=1, init=args.init, seed=args.seed)
     params = model.parameters()
 
-    optim = Optim(params, opt=args.opt, lr=args.lr, beta1=args.beta1, beta2=args.beta2, eps=args.eps,
-                  weight_decay=args.weight_decay, nesterov=(args.opt=='nesterov'))
-    sched = LRScheduler(args.lr, kind=args.lr_sched, step=args.lr_step, gamma=args.lr_gamma,
-                        total_epochs=args.epochs, warmup=args.warmup_epochs)
+    optim, sched = build_optim_and_scheduler(params, args, Optim, LRScheduler)
 
     rng = np.random.default_rng(args.seed)
     N = X_train.shape[0]
@@ -106,6 +106,11 @@ def main():
         print(f"Epoch {epoch:02d} | lr={lr_epoch:.5f} | train_mse={train_loss:.4f} | val_mse={val_loss:.4f}")
 
     print("Note: For proper regression, implement a linear head and MSE-backward path in nn_core.")
+    # Save model and scaler
+    ensure_dir('models'); ensure_dir('artifacts')
+    save_pickle(model, args.model_path)
+    save_pickle(scaler, args.scaler_path)
+    print(f"Saved model to {args.model_path} and scaler to {args.scaler_path}")
 
 
 if __name__ == '__main__':

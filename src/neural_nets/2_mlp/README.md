@@ -34,20 +34,37 @@ python src/neural_nets/2_mlp/mlp_mnist_numpy.py --epochs 10 \
 
 All use-cases share the same flags as the main MNIST CLI (`--opt`, `--init`, `--lr-sched`, etc.).
 
+Common prediction flags (via shared CLI):
+- `--model-path PATH` to save/load models
+- `--predict-image FILE` for image use-cases (.npy flattened)
+- `--download-samples` to fetch a few example inputs (MNIST, Fashion)
+- `--list-samples` (MNIST) to inspect local samples
+- `--predict-text "..."` for the text use-case
+
 - MNIST:
 ```bash
 python src/neural_nets/2_mlp/mnist.py --epochs 3 --opt adamw --lr 3e-3 \
   --lr-sched cosine --warmup-epochs 1 --weight-decay 1e-2
+# Download samples
+python src/neural_nets/2_mlp/mnist.py --download-samples
+# Predict from sample
+python src/neural_nets/2_mlp/mnist.py --predict-image data/raw/mnist_samples/sample_00_digit_0.npy
 ```
 
 - Fashion-MNIST:
 ```bash
 python src/neural_nets/2_mlp/fashion_mnist.py --epochs 5 --opt adamw --lr 3e-3
+# Download samples
+python src/neural_nets/2_mlp/fashion_mnist.py --download-samples
+# Predict from sample
+python src/neural_nets/2_mlp/fashion_mnist.py --predict-image data/raw/fashion_mnist_samples/sample_00_class_0.npy
 ```
 
 - CIFAR-10 (flattened baseline; expect lower accuracy):
 ```bash
 python src/neural_nets/2_mlp/cifar10.py --epochs 5 --opt adamw --lr 1e-3
+# Predict from a flattened .npy (provide your own converter)
+python src/neural_nets/2_mlp/cifar10.py --predict-image path/to/flattened_image.npy
 ```
 
 - California Housing (regression; baseline MSE path):
@@ -58,6 +75,8 @@ python src/neural_nets/2_mlp/california_housing_regression.py --epochs 10 --opt 
 - 20 Newsgroups (TF-IDF + MLP):
 ```bash
 python src/neural_nets/2_mlp/newsgroups_text_classification.py --epochs 5 --opt adamw --lr 3e-3
+# Predict from text after training (model + vectorizer saved automatically)
+python src/neural_nets/2_mlp/newsgroups_text_classification.py --predict-text "Sample news article text here"
 ```
 ```bash
 python src/neural_nets/2_mlp/mlp_mnist_numpy.py --test-all-samples

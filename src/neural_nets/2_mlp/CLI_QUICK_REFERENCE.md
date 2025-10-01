@@ -53,6 +53,11 @@ python src/neural_nets/2_mlp/mlp_mnist_numpy.py --predict-image data/raw/mnist_s
 | `--lr-step INT` | StepLR step size (epochs) |
 | `--lr-gamma FLOAT` | StepLR decay factor |
 | `--warmup-epochs INT` | Cosine warmup epochs |
+| `--model-path PATH` | Save/load trained model (per use-case) |
+| `--predict-image FILE` | Predict class from .npy flattened image |
+| `--list-samples` | List local .npy samples (MNIST) |
+| `--download-samples` | Download a few sample images locally |
+| `--predict-text "..."` | Predict class for a raw text string |
 | `--predict-image FILE` | Predict from image file |
 | `--list-samples` | List available samples |
 | `--test-all-samples` | Test all samples |
@@ -114,6 +119,35 @@ Test Results: 10/10 correct (100.0%)
 | Slow training | Use `--no-plots` flag |
 | Memory issues | Reduce `--batch-size` |
 | Import error for nn_core | Run from repo root or add `sys.path.append('src')` |
+| No samples listed | Use `--download-samples` first |
+
+## 🧪 Quick Predict Examples
+
+### MNIST
+```bash
+# Download samples
+python src/neural_nets/2_mlp/mnist.py --download-samples
+# Predict from a sample
+python src/neural_nets/2_mlp/mnist.py --predict-image data/raw/mnist_samples/sample_00_digit_0.npy
+```
+
+### Fashion-MNIST
+```bash
+python src/neural_nets/2_mlp/fashion_mnist.py --download-samples
+python src/neural_nets/2_mlp/fashion_mnist.py --predict-image data/raw/fashion_mnist_samples/sample_00_class_0.npy
+```
+
+### CIFAR-10 (flattened)
+```bash
+# (Provide your own .npy flattened image or write a small converter)
+python src/neural_nets/2_mlp/cifar10.py --predict-image path/to/flattened_image.npy
+```
+
+### 20 Newsgroups (text)
+```bash
+# After training (saves model and vectorizer automatically)
+python src/neural_nets/2_mlp/newsgroups_text_classification.py --predict-text "Sample news article text here"
+```
 
 ## 📁 File Locations
 
