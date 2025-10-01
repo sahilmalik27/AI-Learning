@@ -31,7 +31,7 @@ def train_model():
     
     return model, iris.feature_names, iris.target_names, acc, y_test, y_pred, X_test
 
-def save_model(model, feature_names, target_names, model_path="iris_model.pkl"):
+def save_model(model, feature_names, target_names, model_path="models/iris_model.pkl"):
     """Save the trained model and feature names"""
     model_data = {
         'model': model,
@@ -42,7 +42,7 @@ def save_model(model, feature_names, target_names, model_path="iris_model.pkl"):
         pickle.dump(model_data, f)
     print(f"Model saved to {model_path}")
 
-def load_model(model_path="iris_model.pkl"):
+def load_model(model_path="models/iris_model.pkl"):
     """Load the trained model and feature names"""
     if not os.path.exists(model_path):
         return None, None, None
@@ -67,7 +67,7 @@ def main():
     parser.add_argument('--predict', nargs=4, type=float, metavar=('SepalLength', 'SepalWidth', 'PetalLength', 'PetalWidth'),
                        help='Predict iris species with 4 feature values')
     parser.add_argument('--interactive', action='store_true', help='Interactive prediction mode')
-    parser.add_argument('--model-path', default='iris_model.pkl', help='Path to save/load model')
+    parser.add_argument('--model-path', default='models/iris_model.pkl', help='Path to save/load model')
     
     args = parser.parse_args()
     
@@ -125,6 +125,11 @@ def main():
 
         plt.tight_layout()
         plt.suptitle('Iris Species Classification Analysis', fontsize=16, y=1.02)
+        
+        # Save plot
+        os.makedirs('experiments/plots', exist_ok=True)
+        plt.savefig('experiments/plots/iris_classification_analysis.png', dpi=300, bbox_inches='tight')
+        print("Plot saved to experiments/plots/iris_classification_analysis.png")
         plt.show()
 
         # Additional analysis

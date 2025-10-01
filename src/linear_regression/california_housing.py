@@ -32,7 +32,7 @@ def train_model():
     
     return model, housing.feature_names, rmse, r2, y_test, y_pred
 
-def save_model(model, feature_names, model_path="california_housing_model.pkl"):
+def save_model(model, feature_names, model_path="models/california_housing_model.pkl"):
     """Save the trained model and feature names"""
     model_data = {
         'model': model,
@@ -42,7 +42,7 @@ def save_model(model, feature_names, model_path="california_housing_model.pkl"):
         pickle.dump(model_data, f)
     print(f"Model saved to {model_path}")
 
-def load_model(model_path="california_housing_model.pkl"):
+def load_model(model_path="models/california_housing_model.pkl"):
     """Load the trained model and feature names"""
     if not os.path.exists(model_path):
         return None, None
@@ -65,7 +65,7 @@ def main():
     parser.add_argument('--predict', nargs=8, type=float, metavar=('MedInc', 'HouseAge', 'AveRooms', 'AveBedrms', 'Population', 'AveOccup', 'Latitude', 'Longitude'),
                        help='Predict house price with 8 feature values')
     parser.add_argument('--interactive', action='store_true', help='Interactive prediction mode')
-    parser.add_argument('--model-path', default='california_housing_model.pkl', help='Path to save/load model')
+    parser.add_argument('--model-path', default='models/california_housing_model.pkl', help='Path to save/load model')
     
     args = parser.parse_args()
     
@@ -124,6 +124,11 @@ def main():
 
         plt.tight_layout()
         plt.suptitle('California Housing Linear Regression Analysis', fontsize=16, y=1.02)
+        
+        # Save plot
+        os.makedirs('experiments/plots', exist_ok=True)
+        plt.savefig('experiments/plots/california_housing_analysis.png', dpi=300, bbox_inches='tight')
+        print("Plot saved to experiments/plots/california_housing_analysis.png")
         plt.show()
 
         # Additional analysis
