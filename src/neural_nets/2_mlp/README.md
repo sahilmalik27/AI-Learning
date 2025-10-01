@@ -30,6 +30,35 @@ python src/neural_nets/2_mlp/mlp_mnist_numpy.py --epochs 10 \
 ```
 
 ### 3. Test with Images
+## 🧩 New Use-Cases (2-layer MLP)
+
+All use-cases share the same flags as the main MNIST CLI (`--opt`, `--init`, `--lr-sched`, etc.).
+
+- MNIST:
+```bash
+python src/neural_nets/2_mlp/mnist.py --epochs 3 --opt adamw --lr 3e-3 \
+  --lr-sched cosine --warmup-epochs 1 --weight-decay 1e-2
+```
+
+- Fashion-MNIST:
+```bash
+python src/neural_nets/2_mlp/fashion_mnist.py --epochs 5 --opt adamw --lr 3e-3
+```
+
+- CIFAR-10 (flattened baseline; expect lower accuracy):
+```bash
+python src/neural_nets/2_mlp/cifar10.py --epochs 5 --opt adamw --lr 1e-3
+```
+
+- California Housing (regression; baseline MSE path):
+```bash
+python src/neural_nets/2_mlp/california_housing_regression.py --epochs 10 --opt adamw --lr 1e-2
+```
+
+- 20 Newsgroups (TF-IDF + MLP):
+```bash
+python src/neural_nets/2_mlp/newsgroups_text_classification.py --epochs 5 --opt adamw --lr 3e-3
+```
 ```bash
 python src/neural_nets/2_mlp/mlp_mnist_numpy.py --test-all-samples
 ```
