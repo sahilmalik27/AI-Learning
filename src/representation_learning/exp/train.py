@@ -1,4 +1,12 @@
-# exp/train.py
+"""Experiment runner for representation learning on CIFAR-10.
+
+Features:
+- Model factory (LeNet/VGG/ResNet/MobileNet)
+- Device pick (CUDA→MPS→CPU), AMP on CUDA
+- Config-driven training with optional small subsets
+- Configurable logging (TB, confusion, feature maps, Grad-CAM, CSV)
+- Checkpointing to models/representations/exp/<exp_name>
+"""
 import os, argparse, yaml, csv
 from pathlib import Path
 import numpy as np
@@ -150,8 +158,13 @@ def parse_args():
 
 def main():
     args=parse_args(); cfg=yaml.safe_load(open(args.config)); set_seed(cfg['misc']['seed'])
-    logging_mode = str(cfg.get('misc',{}).get('logging','full')).lower()  # 'full' | 'none'
-    log_every_n = int(cfg.get('misc',{}).get('log_every_n', 1))
+    misc_cfg = cfg.get('misc', {})
+    logging_mode = str(misc_cfg.get('logging','full')).lower()  # 'full' | 'none'
+    log_every_n = int(misc_cfg.get('log_every_n', 1))
+    enable_confusion = bool(misc_cfg.get('log_confusion', logging_mode != 'none'))
+    enable_feature_maps = bool(misc_cfg.get('log_feature_maps', logging_mode != 'none'))
+    enable_gradcam = bool(misc_cfg.get('log_gradcam', logging_mode != 'none'))
+    csv_logging = bool(misc_cfg.get('csv_logging', logging_mode != 'none'))
     # Prefer CUDA, then Apple Metal (MPS), else CPU
     if torch.cuda.is_available():
         device = torch.device('cuda')
@@ -179,7 +192,13 @@ def main():
         except Exception as e:
             print('[TB] graph skipped:', e)
 
-    trainloader, testloader = make_cifar10_loaders(cfg['data']['root'], cfg['train']['batch_size'], cfg['misc']['num_workers'])
+    trainloader, testloader = make_cifar10_loaders(
+        cfg['data']['root'],
+        cfg['train']['batch_size'],
+        cfg['misc']['num_workers'],
+        max_train=cfg['data'].get('max_train'),
+        max_test=cfg['data'].get('max_test'),
+    )
 
     # TB: image previews
     if writer is not None:
@@ -204,7 +223,8 @@ def main():
     state=TrainState()
     with open(log_path,'a',newline="") as f:
         w=csv.writer(f)
-        if f.tell()==0: w.writerow(['epoch','train_loss','train_acc','val_loss','val_acc','lr'])
+        if csv_logging and f.tell()==0:
+            w.writerow(['epoch','train_loss','train_acc','val_loss','val_acc','lr'])
         for epoch in range(cfg['train']['epochs']):
             state.epoch=epoch+1; lr_now=optimizer.param_groups[0]['lr']
             tr_loss,tr_acc = train_one_epoch(model, trainloader, optimizer, device, scaler, criterion, grad_clip=cfg['train']['grad_clip'] or None)
@@ -229,8 +249,8 @@ def main():
                     except Exception:
                         pass
 
-            # Per-class & confusion (heavy): only when logging enabled and at interval
-            if writer is not None and (state.epoch % log_every_n == 0):
+            # Per-class & confusion (heavy): only when enabled and at interval
+            if writer is not None and enable_confusion and (state.epoch % log_every_n == 0):
                 try:
                     cm, per_class = compute_confusion_and_per_class(model, testloader, device, num_classes=10)
                     for cls_idx, accv in per_class.items():
@@ -240,23 +260,26 @@ def main():
                 except Exception as e:
                     print('[TB] per-class/confusion skipped:', e)
 
-            # Feature maps & Grad-CAM (heavy): only when logging enabled and at interval
+            # Feature maps & Grad-CAM (heavy): only when enabled and at interval
             if writer is not None and (state.epoch % log_every_n == 0):
                 try:
-                    batch_images, _ = next(iter(trainloader))
-                    batch_images = batch_images.to(device)
-                    log_feature_maps(writer, model, batch_images, state.epoch)
+                    if enable_feature_maps:
+                        batch_images, _ = next(iter(trainloader))
+                        batch_images = batch_images.to(device)
+                        log_feature_maps(writer, model, batch_images, state.epoch)
                 except Exception as e:
                     print('[TB] feature maps skipped:', e)
                 try:
-                    val_batch = next(iter(testloader))
-                    images, _ = val_batch
-                    log_gradcam(writer, model, images, device, state.epoch, tag='GradCAM/val', max_items=8)
+                    if enable_gradcam:
+                        val_batch = next(iter(testloader))
+                        images, _ = val_batch
+                        log_gradcam(writer, model, images, device, state.epoch, tag='GradCAM/val', max_items=8)
                 except Exception as e:
                     print('[TB] grad-cam skipped:', e)
 
             print(f"[{state.epoch}/{cfg['train']['epochs']}] train_loss={tr_loss:.4f} acc={tr_acc*100:.2f}% | val_loss={val_loss:.4f} acc={val_acc*100:.2f}%")
-            w.writerow([state.epoch, tr_loss, tr_acc, val_loss, val_acc, lr_now]); f.flush()
+            if csv_logging:
+                w.writerow([state.epoch, tr_loss, tr_acc, val_loss, val_acc, lr_now]); f.flush()
 
             # Checkpointing
             try:

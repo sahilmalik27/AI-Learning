@@ -1,4 +1,13 @@
-"""CNN model zoo for small CIFAR-10 experiments (LeNet, VGG, ResNet18, MobileNetV2 tiny)."""
+"""CNN model zoo for small CIFAR-10 experiments.
+
+Includes:
+- LeNetSmall: classic small CNN baseline
+- VGGTiny: compact VGG-style stack
+- ResNet18Tiny: residual blocks with batch norm
+- MobileNetV2Tiny: depthwise separable inverted residual blocks
+
+Use via make_model(name, num_classes) where name in {lenet, vgg, resnet, mobilenet}.
+"""
 
 from typing import Tuple
 import torch

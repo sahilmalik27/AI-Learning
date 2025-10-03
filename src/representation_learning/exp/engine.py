@@ -1,3 +1,8 @@
+"""Training engine: optimizer/scheduler factories and simple train/eval loops.
+
+Lightweight utilities used by exp/train.py. Designed to be device-agnostic and
+work on CUDA, MPS and CPU. AMP is handled by the caller.
+"""
 # exp/engine.py
 import torch, torch.nn as nn
 from dataclasses import dataclass

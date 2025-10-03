@@ -1,11 +1,11 @@
-experiment_name: cifar10_lenet
-model: lenet
+experiment_name: cifar10_mobilenet
+model: mobilenet
 data:
   root: ./data
   max_train: 5000
   max_test: 1000
 train:
-  epochs: 2
+  epochs: 3
   batch_size: 256
   lr: 0.001
   weight_decay: 0.0005
