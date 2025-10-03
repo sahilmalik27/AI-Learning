@@ -1,0 +1,6 @@
+# exp/configs/cifar10_lenet.yaml
+experiment_name: cifar10_lenet
+model: lenet
+data: {root: ./data}
+train: {epochs: 2, batch_size: 256, lr: 0.001, weight_decay: 0.0005, optimizer: adamw, scheduler: cosine, grad_clip: 1.0, label_smoothing: 0.0}
+misc: {seed: 42, num_workers: 4, out_dir: ./runs, resume: "", amp: true, logging: none, log_every_n: 5}
