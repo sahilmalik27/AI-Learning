@@ -1,0 +1,26 @@
+run_name: sine_lstm
+seed: 1337
+
+model:
+  type: lstm
+  hidden_size: 64
+  num_layers: 1
+  bidirectional: false
+  dropout: 0.0
+  horizon: 16
+
+data:
+  type: sine
+  N: 2000
+  freq: 0.01
+  trend: 0.0005
+  noise: 0.1
+  window: 64
+  horizon: 16
+  split: 0.8
+
+train:
+  epochs: 10
+  batch_size: 64
+  lr: 0.001
+  clip_grad: 1.0

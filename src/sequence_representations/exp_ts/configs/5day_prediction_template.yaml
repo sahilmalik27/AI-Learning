@@ -1,0 +1,31 @@
+# Template for 5-day stock price prediction
+# Usage: Copy this file and modify the ticker and run_name
+
+run_name: 5day_stock_lstm  # Change this to your stock name
+seed: 1337
+
+model:
+  type: lstm  # rnn, lstm, or gru
+  hidden_size: 128
+  num_layers: 1
+  bidirectional: false
+  dropout: 0.0
+  horizon: 5  # Predict next 5 days
+
+data:
+  type: stooq  # yahoo or stooq
+  ticker: AAPL  # Change this to any ticker: AAPL, META, TSLA, GOOGL, MSFT, etc.
+  start_date: 2020-01-01  # For stooq
+  end_date: 2024-01-01    # For stooq
+  period: 2y  # For yahoo
+  interval: 1d  # For yahoo
+  use_log_returns: true
+  window: 60   # Use last 60 days to predict next 5 days
+  horizon: 5   # Predict next 5 days
+  split: 0.8
+
+train:
+  epochs: 20
+  batch_size: 128
+  lr: 0.001
+  clip_grad: 1.0

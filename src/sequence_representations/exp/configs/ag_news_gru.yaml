@@ -1,0 +1,25 @@
+run_name: gru_ag_news
+seed: 1337
+
+model:
+  type: gru
+  embed_dim: 128
+  hidden_size: 256
+  num_layers: 1
+  bidirectional: false
+  dropout: 0.1
+  num_classes: 4
+
+data:
+  root: .data
+  max_len: 200
+  min_freq: 1
+  num_workers: 0
+
+train:
+  epochs: 5
+  batch_size: 128
+  lr: 0.001
+  clip_grad: 1.0
+
+introspect: true

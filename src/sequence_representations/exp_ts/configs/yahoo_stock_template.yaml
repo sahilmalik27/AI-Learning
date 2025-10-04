@@ -1,0 +1,29 @@
+# Template for any stock ticker
+# Usage: Copy this file and modify the ticker and run_name
+
+run_name: yahoo_stock_lstm  # Change this to your stock name
+seed: 1337
+
+model:
+  type: lstm  # rnn, lstm, or gru
+  hidden_size: 128
+  num_layers: 1
+  bidirectional: false
+  dropout: 0.0
+  horizon: 20
+
+data:
+  type: yahoo
+  ticker: AAPL  # Change this to any ticker: AAPL, META, TSLA, GOOGL, MSFT, etc.
+  period: 5y   # 1y, 2y, 5y, 10y, max
+  interval: 1d # 1d, 1h, 1wk, 1mo
+  use_log_returns: true  # true for log returns, false for raw prices
+  window: 120
+  horizon: 20
+  split: 0.8
+
+train:
+  epochs: 20
+  batch_size: 128
+  lr: 0.001
+  clip_grad: 1.0

@@ -1,0 +1,26 @@
+run_name: yahoo_apple_lstm
+seed: 1337
+
+model:
+  type: lstm
+  hidden_size: 128
+  num_layers: 1
+  bidirectional: false
+  dropout: 0.0
+  horizon: 20
+
+data:
+  type: yahoo
+  ticker: AAPL
+  period: 5y
+  interval: 1d
+  use_log_returns: true
+  window: 120
+  horizon: 20
+  split: 0.8
+
+train:
+  epochs: 20
+  batch_size: 128
+  lr: 0.001
+  clip_grad: 1.0
