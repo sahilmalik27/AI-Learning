@@ -154,12 +154,34 @@ python scripts/ts_infer.py --config <config> --ckpt models/representations/exp_t
 # 5-Day prediction with dates
 python scripts/ts_infer.py --config <config> --ckpt <model> --predict-5-days --show-dates
 
+# 5-Day prediction with automatic price fetching
+python scripts/ts_infer.py --config <config> --ckpt <model> --predict-5-days --show-dates --show-prices
+
+# 5-Day prediction with manual price override
+python scripts/ts_infer.py --config <config> --ckpt <model> --predict-5-days --show-dates --current-price 258.0 --show-prices
+
 # Custom input sequence
 python scripts/ts_infer.py --config <config> --ckpt <model> --input "0.1,0.2,0.3,0.4,0.5"
 
-# 5-Day prediction with custom input
-python scripts/ts_infer.py --config <config> --ckpt <model> --predict-5-days --input "0.1,0.2,0.3,0.4,0.5" --show-dates
+# 5-Day prediction with custom input and automatic prices
+python scripts/ts_infer.py --config <config> --ckpt <model> --predict-5-days --input "0.1,0.2,0.3,0.4,0.5" --show-dates --show-prices
 ```
+
+## 🔄 **Automatic Price Fetching**
+
+The inference system can automatically fetch current stock prices from the data source:
+
+- **Stooq**: Fetches the most recent close price from Stooq API
+- **Yahoo Finance**: Fetches the most recent close price from Yahoo Finance
+- **Fallback**: If API fails, gracefully falls back to log returns only
+- **Manual Override**: Use `--current-price` to override automatic fetching
+
+### **Price Display Features**
+- ✅ **Real-time Prices**: Automatically fetches current stock price
+- ✅ **Price Progression**: Shows price changes day by day
+- ✅ **Percentage Changes**: Displays both dollar and percentage changes
+- ✅ **Total Summary**: Shows starting price, final price, and total change
+- ✅ **Date Integration**: Shows prediction dates with prices
 
 ## 💡 **Best Practices**
 
