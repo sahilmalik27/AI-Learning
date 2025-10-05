@@ -324,19 +324,4 @@ By the end of this program, you will:
 - BERT: Pre-training of Deep Bidirectional Transformers
 - GPT-3: Language Models are Few-Shot Learners
 
-## 🤝 Contributing
-
-This is a personal learning repository. Feel free to:
-- Add your own experiments and projects
-- Share interesting findings
-- Contribute to the learning materials
-
-## 📝 License
-
-This project is for educational purposes. Please respect the licenses of the libraries and datasets used.
-
----
-
 **Happy Learning! 🚀**
-
-Start with Week 1 and work through each week systematically. Each week builds upon the previous ones, so don't skip ahead!
